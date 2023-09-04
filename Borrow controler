@@ -1,0 +1,215 @@
+using System;
+using System.Linq;
+using System.Web.Mvc;
+using MyLibrary.Models;
+
+namespace MyLibrary.Controllers
+{
+    public class BorrowBookController : Controller
+    {
+        private I_CoposEntities db = new I_CoposEntities();
+        UserInfo user = new UserInfo();
+
+        // Acțiunea pentru afișarea cărților împrumutate de către utilizator
+        public ActionResult MyBorrowedBooks()
+        {
+            if (user.isLoggedIn()) // Verifică dacă utilizatorul este autentificat
+            {
+                var borrowedBooks = db.Barrows.ToList();
+                foreach (var book in borrowedBooks)
+                {
+                    // Formatează datele pentru afișare, inclusiv data de împrumut și data de returnare
+                    book.BorrowDateFormated = book.BorrowDate.HasValue
+                        ? book.BorrowDate.Value.ToString("yyyy-MM-dd HH:mm:ss")
+                        : "Not returned yet";
+                    book.ReturnDateFormatted = book.ReturnDate.HasValue
+                        ? book.ReturnDate.Value.ToString("yyyy-MM-dd HH:mm:ss")
+                        : "Not returned yet";
+                }
+                return View(borrowedBooks); // Returnează o vizualizare care afișează cărțile împrumutate
+            }
+            else
+            {
+                return RedirectToAction("LoginPage", "Account"); // Redirecționează utilizatorul către pagina de autentificare
+            }
+        }
+
+        // Acțiunea pentru returnarea unei cărți
+        public ActionResult ReturnBook(int BorrowedBookId)
+        {
+            var borrowedBook = db.Barrows.Find(BorrowedBookId);
+            if (borrowedBook != null && !borrowedBook.IsValidated && borrowedBook.ReturnDate.HasValue)
+            {
+                borrowedBook.ReturnDate = DateTime.Now;
+                db.SaveChanges();
+
+                var bookAvailable = db.BooksAvailables.FirstOrDefault(b => b.Isbn13 == borrowedBook.BookISBN);
+                if (bookAvailable != null)
+                {
+                    bookAvailable.QtyAvailable++;
+                    db.SaveChanges();
+                }
+
+                // Setează starea cărții la "Disponibilă" după returnare
+                borrowedBook.Book.Status = "Disponibilă";
+                db.SaveChanges();
+            }
+            return RedirectToAction("MyBorrowedBooks");
+        }
+
+        // Acțiunea pentru validarea returnării unei cărți
+        public ActionResult ValidateReturn(int BorrowedBookId)
+        {
+            var borrowedBook = db.Barrows.Find(BorrowedBookId);
+            if (borrowedBook != null)
+            {
+                borrowedBook.IsValidated = true;
+                db.SaveChanges();
+            }
+            return RedirectToAction("MyBorrowedBooks");
+        }
+
+        [HttpGet]
+        // Acțiunea pentru afișarea formularului de împrumut
+        public ActionResult Borrow()
+        {
+            ViewBag.ErrorMessage = TempData["ErrorMessage"];
+            ViewBag.SuccessMessage = TempData["SuccessMessage"];
+            return View();
+        }
+
+        [HttpPost]
+        // Acțiunea pentru procesarea împrumutului de carte
+        public ActionResult Borrow(string isbn13)
+        {
+            string currentUserId = getUserName();
+            int borrowedBooksCount = db.Barrows.Count(b => b.UserId == currentUserId);
+
+            if (borrowedBooksCount >= 5)
+            {
+                TempData["ErrorMessage"] = "You have reached the maximum limit of borrowed books (5).";
+                return RedirectToAction("Borrow");
+            }
+
+            if (string.IsNullOrEmpty(isbn13) || isbn13.Length != 13)
+            {
+                TempData["ErrorMessage"] = "ISBN-13 must be 13 digits long.";
+                return RedirectToAction("Borrow");
+            }
+
+            var book = db.BooksAvailables.FirstOrDefault(b => b.Isbn13 == isbn13);
+            if (book == null)
+            {
+                TempData["ErrorMessage"] = "The book with this ISBN-13 does not exist in the library.";
+                return RedirectToAction("Borrow");
+            }
+
+            if (user.isLoggedIn())
+            {
+                if (book.QtyAvailable > 0 && book.Status != "Împrumutată") // Verifică starea cărții
+                {
+                    book.QtyAvailable--;
+                    book.Status = "Împrumutată"; // Setează starea cărții la "Împrumutată"
+
+                    Barrow borrowedBook = new Barrow
+                    {
+                        UserId = currentUserId,
+                        BookName = book.BookName,
+                        BookISBN = book.Isbn13,
+                        BorrowDate = DateTime.Now,
+                        ReturnDate = DateTime.Now.AddDays(14)
+                    };
+
+                    db.Barrows.Add(borrowedBook);
+                    db.SaveChanges();
+
+                    TempData["SuccessMessage"] = "The book has been borrowed successfully!";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "The book is not available for loan or has already been borrowed.";
+                }
+
+                return RedirectToAction("MyBorrowedBooks");
+            }
+            else
+            {
+                return RedirectToAction("LoginPage", "Account");
+            }
+        }
+
+        // Metoda pentru a obține numele utilizatorului
+        public string getUserName()
+        {
+            UserInfo user = new UserInfo();
+            return user.getUsername();
+        }
+    }
+}
+
+
+
+
+
+
+Acuma este viewul
+
+@model List<MyLibrary.Models.Barrow>
+
+@{
+    ViewBag.Title = "My Borrowed Books";
+    Layout = "~/Views/Shared/_Layout.cshtml"; // Specificați layout-ul de bază, dacă este cazul
+}
+
+<h2>My Borrowed Books</h2>
+
+@if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+{
+    <div class="alert alert-danger">
+        @ViewBag.ErrorMessage
+    </div>
+}
+
+@if (!string.IsNullOrEmpty(ViewBag.SuccessMessage))
+{
+    <div class="alert alert-success">
+        @ViewBag.SuccessMessage
+    </div>
+}
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Book Name</th>
+            <th>ISBN</th>
+            <th>Borrow Date</th>
+            <th>Return Date</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var book in Model)
+        {
+            <tr>
+                <td>@book.BorrowedBookId</td>
+                <td>@book.BookName</td>
+                <td>@book.BookISBN</td>
+                <td>@book.BorrowDateFormatted</td>
+                <td>@book.ReturnDateFormatted</td>
+                <td>
+                    @if (!book.ReturnDate.HasValue || !book.IsValidated)
+                    {
+                        <a href="@Url.Action("ReturnBook", "BorrowBook", new { BorrowedBookId = book.BorrowedBookId })" class="btn btn-primary">Return Book</a>
+                        <a href="@Url.Action("ValidateReturn", "BorrowBook", new { BorrowedBookId = book.BorrowedBookId })" class="btn btn-success">Validate Return</a>
+                    }
+                    else
+                    {
+                        <text>Returned and Validated</text>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
