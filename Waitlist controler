@@ -1,0 +1,192 @@
+using System;
+using System.Linq;
+using System.Web.Mvc;
+using MyLibrary.Models;
+
+namespace MyLibrary.Controllers
+{
+    public class WaitListController : Controller
+    {
+        private I_CoposEntities db = new I_CoposEntities();
+        UserInfo user = new UserInfo();
+
+        // Afișează lista de așteptare a utilizatorului
+        public ActionResult MyWaitList()
+        {
+            // Returnează lista de așteptare ordonată după ID-ul de așteptare și elimină duplicările
+            return View(db.Waitlists.OrderBy(p => p.WaitlistId).Distinct().ToList());
+        }
+
+        // Afișează pagina pentru adăugarea unei cărți în lista de așteptare
+        public ActionResult Join()
+        {
+            ViewBag.ErrorMessage = TempData["ErrorMessage"];
+            ViewBag.SuccessMessage = TempData["SuccessMessage"];
+            return View();
+        }
+
+        // Procesează adăugarea unei cărți în lista de așteptare
+        [HttpPost]
+        public ActionResult Join(string isbn13)
+        {
+            if (string.IsNullOrEmpty(isbn13) || isbn13.Length != 13)
+            {
+                TempData["ErrorMessage"] = "ISBN-13 trebuie să conțină 13 cifre.";
+                return RedirectToAction("Join");
+            }
+
+            var book = db.BooksAvailables.FirstOrDefault(b => b.Isbn13 == isbn13);
+            if (book == null)
+            {
+                TempData["ErrorMessage"] = "Cărțile cu acest ISBN-13 nu există în bibliotecă.";
+                return RedirectToAction("Join");
+            }
+
+            if (user.isLoggedIn())
+            {
+                string currentUserId = getUserName();
+
+                if (book.QtyAvailable > 0)
+                {
+                    book.QtyAvailable--;
+
+                    Waitlist waitlistedBook = new Waitlist
+                    {
+                        UserId = currentUserId,
+                        BookName = book.BookName,
+                        BookISBN = book.Isbn13,
+                        RegistrationDate = DateTime.Now,
+                        ReturnDate = DateTime.Now.AddDays(1)
+                    };
+
+                    db.Waitlists.Add(waitlistedBook);
+                    db.SaveChanges();
+
+                    TempData["SuccessMessage"] = "Cartea a fost adăugată cu succes în lista de așteptare!";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Cartea nu este disponibilă pentru lista de așteptare.";
+                }
+
+                return RedirectToAction("Join");
+            }
+            else
+            {
+                return RedirectToAction("LoginPage", "Account");
+            }
+        }
+
+        // Afișează detalii despre o carte din lista de așteptare
+        public ActionResult ViewWaitlistDetails(int waitlistId)
+        {
+            var waitlistedBook = db.Waitlists.Find(waitlistId);
+
+            if (waitlistedBook != null)
+            {
+                // Aici puteți adăuga logica pentru a obține informații suplimentare despre carte
+                // De exemplu, puteți verifica starea curentă sau data estimată de disponibilitate
+                // Aceste informații pot fi preluate din baza de date sau calculate în funcție de logica aplicației
+
+                // Exemplu de preluare a stării curente din baza de date (presupunând că starea cărții este într-un câmp numit "Status"):
+                string bookStatus = "N/A"; // Valoarea implicită
+
+                var bookInLibrary = db.BooksAvailables.FirstOrDefault(b => b.Isbn13 == waitlistedBook.BookISBN);
+                if (bookInLibrary != null)
+                {
+                    bookStatus = bookInLibrary.Status;
+                }
+
+                // Adăugați informațiile la modelul de vizualizare pentru a le afișa în view
+                waitlistedBook.ExtraDetails = $"Stare curentă: {bookStatus}";
+
+                return View(waitlistedBook);
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Cartea nu a fost găsită în lista de așteptare.";
+                return RedirectToAction("MyWaitList");
+            }
+        }
+
+        // Afișează pagina pentru eliminarea unei cărți din lista de așteptare
+        public ActionResult RemoveFromWaitlist(int waitlistId)
+        {
+            var waitlistedBook = db.Waitlists.Find(waitlistId);
+            
+            if (waitlistedBook != null)
+            {
+                return View(waitlistedBook);
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Cartea nu a fost găsită în lista de așteptare.";
+                return RedirectToAction("MyWaitList");
+            }
+        }
+
+        // Procesează eliminarea unei cărți din lista de așteptare
+        [HttpPost]
+        public ActionResult RemoveFromWaitlistConfirmed(int waitlistId)
+        {
+            var waitlistedBook = db.Waitlists.Find(waitlistId);
+
+            if (waitlistedBook != null)
+            {
+                db.Waitlists.Remove(waitlistedBook);
+                db.SaveChanges();
+                TempData["SuccessMessage"] = "Cartea a fost eliminată cu succes din lista de așteptare.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Cartea nu a fost găsită în lista de așteptare.";
+            }
+
+            return RedirectToAction("MyWaitList");
+        }
+
+        // Afișează pagina pentru mutarea unei cărți din lista de așteptare la cărțile împrumutate
+        public ActionResult MoveToBorrowed(int waitlistId)
+        {
+            var waitlistedBook = db.Waitlists.Find(waitlistId);
+            
+            if (waitlistedBook != null)
+            {
+                return View(waitlistedBook);
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Cartea nu a fost găsită în lista de așteptare.";
+                return RedirectToAction("MyWaitList");
+            }
+        }
+
+        // Procesează mutarea unei cărți din lista de așteptare la cărțile împrumutate
+        [HttpPost]
+        public ActionResult MoveToBorrowedConfirmed(int waitlistId)
+        {
+            var waitlistedBook = db.Waitlists.Find(waitlistId);
+
+            if (waitlistedBook != null)
+            {
+                // Adăugați logica pentru a muta cartea în cărțile împrumutate aici
+                // De exemplu, creați o nouă înregistrare în tabelul pentru împrumuturi și ștergeți-o din lista de așteptare
+
+                TempData["SuccessMessage"] = "Cartea a fost mutată cu succes la cărțile împrumutate.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = "Cartea nu a fost găsită în lista de așteptare.";
+            }
+
+            return RedirectToAction("MyWaitList");
+        }
+
+        public string getUserName()
+        {
+            UserInfo user = new UserInfo();
+            return user.getUsername();
+        }
+    }
+}
+
