@@ -1,0 +1,275 @@
+. Understanding the application with the login part
+
+2. Adapting the application to the database.
+
+3. Modifying/replacing the groups in the example with the following:
+
+·         Oradea-RO LibraryApp Admin
+
+·         Oradea-RO LibraryApp User
+
+4. Adaptation of the application login
+
+ 
+
+5. Adding controls and functionality (Dynamic View using js, Bootstrap) (week 6 – week 7)
+
+ 
+
+Borrow Book Requirements:
+
+1.       User Identification:
+
+·         Users should be identified by their employee ID.
+
+2.       Book Identification:
+
+·         Books should be identified by their ISBN-13 (a 13-digit unique identifier for books).
+
+3.       User Interface:
+
+·         Provide a graphical user interface (GUI) for users to enter the book's ISBN-13 code or a list where the user can select the desired book from the available ones.
+
+4.       Validation:
+
+·         Validate user input:
+
+·         ISBN-13:
+
+·         Check that the ISBN-13 is 13 digits in length.
+
+·         If the input is a number and less than 14 digits, prompt the user to enter more characters.
+
+5.       Book Availability:
+
+·         Query the database to check if the book with the given ISBN-13 is available for borrowing.
+
+·         Display the book's name if it's available.
+
+·         If the book is not available, inform the user or allow them to reserve it if it's not already reserved.
+
+6.       Borrowing Limitations:
+
+·         Ensure a user cannot borrow more books than the system allows.
+
+·         Limit the borrowing duration (e.g., 2 weeks).
+
+7.       Borrowing Action:
+
+·         When the user clicks the "Borrow" button:
+
+·         Verify that the ISBN-13 is valid.
+
+·         Check if the book is available for borrowing.
+
+·         If available:
+
+·         Insert a new borrowing record into the database, including the book's ID, user's employee ID, borrow date, and return date.
+
+·         Update the availability count for the book.
+
+·         Notify the user of the successful borrowing.
+
+·         If not available:
+
+·         If not reserved, allow the user to reserve it.
+
+·         If reserved, inform the user that the book is not available.
+
+8.       Email Notification:
+
+·         Send an email notification to the user with the borrowing details (return date, current date).
+
+9.       User Feedback:
+
+·         Provide appropriate feedback to the user at each step of the borrowing process, including success and failure messages.
+
+10.   Extending Borrowing Period:
+
+·         Allow users to extend the borrowing period by another 2 weeks if the book is not reserved and the maximum borrowing duration has not been reached.
+
+ 
+
+Requirements for Waitlist Functionality:
+
+1.       User Identification:
+
+·         Users should input their employee ID.
+
+2.       Book Identification:
+
+·         Users should input the ISBN-13 of the book they want to waitlist.
+
+3.       Validation:
+
+·         Validate user input:
+
+·         ISBN-13:
+
+·         Check that the ISBN-13 is valid.
+
+4.       Database Interaction:
+
+·         Insert a record into the 'waitlist' table, recording the employee ID, book ISBN, and registration date.
+
+5.       Feedback:
+
+·         Provide appropriate feedback to the user about the waitlisting process.
+
+6.       User Interface Update:
+
+·         Update the user interface to show that the user has joined the waitlist for the specified book.
+
+7.       Administrator Notification:
+
+·         Notify the administrator about new waitlist registrations.
+
+ 
+
+ 
+
+User Functionality:
+
+1.       User Authentication:
+
+·         Implement a secure login mechanism for users to access their accounts.
+
+2.       User Dashboard:
+
+·         Design a user dashboard where users can access their borrowed books, waitlist status.
+
+3.       Borrow Book:
+
+·         Allow users to search for available books by title, author, or ISBN.
+
+·         Provide an option for users to borrow available books for a specified period.
+
+4.       Borrow History:
+
+·         Show users a list of books they have borrowed along with due dates.
+
+5.       Extend Borrowing Period:
+
+·         Enable users to request an extension for borrowed books if they are eligible and the book is not reserved.
+
+6.       Waitlist:
+
+·         Allow users to join the waitlist for books that are currently unavailable.
+
+7.       Waitlist Status:
+
+·         Show users the status of their waitlisted books, including their position in the queue.
+
+8.       Notifications and Alerts:
+
+·         Send users notifications and alerts about due dates, book availability, and waitlist updates.
+
+9.       Search and Filtering:
+
+·         Allow users to search and filter books based on various criteria to find the desired books more easily.
+
+10.   Language and Localization: (Optional)
+
+·         Implement localization options to allow users to interact with the system in their preferred language.
+
+ 
+
+Admin Functionality:
+
+1.       Admin Interface:
+
+·         Design a user-friendly interface specifically for administrators.
+
+·         Provide a clear navigation system to access different sections of the admin features.
+
+2.       Display Borrowed Information:
+
+·         Create a section within the admin interface to display borrowed book information.
+
+3.       Database Interaction:
+
+·         Develop SQL queries to retrieve information from the "borrowed"/”Wait” table.
+
+·         Retrieve data such as employee names, book names, and return dates for borrowed/waited books.
+
+4.       Search and Filter Functionality:
+
+·         Implement search and filter options to allow administrators to find specific records easily.
+
+·         Enable searching by employee name, book name, and return date.
+
+5.       Sorting and Pagination:
+
+·         Implement sorting options to order the borrowed records based on different criteria (e.g., by employee, by due date).
+
+·         Provide pagination if there are many records to improve navigation.
+
+6.       Update and Delete Functionality:
+
+·         Allow administrators to update and delete records from the borrowed/waitlist table.
+
+·         Provide confirmation dialogs for important actions to prevent accidental data loss.
+
+7.       Detailed View:
+
+·         Enable administrators to view detailed information about each borrowed/wailist book when clicked.
+
+8.       Export and Reporting:
+
+·         Implement the ability to export borrowed/waitlist records to various formats (e.g., CSV, Excel) for reporting purposes.
+
+9.       Notification and Alerts:
+
+·         Provide administrators with alerts or notifications about upcoming due dates or overdue books.
+
+ 
+
+ 
+
+Suggested tables:
+
+ 
+
+Books Table:
+Stores book information, including ISBN-13, title, author, publisher, publication year, and other book-related details.
+Helps manage the book catalog and availability.
+Borrowed Books Table:
+Records borrowing transactions, including the book ID, user ID, borrow date, return date, and any other relevant information.
+Keeps track of borrowed books and their due dates.
+Waitlist Table:
+Records users who have joined the waitlist for specific books.
+Stores user ID, book ID, and registration date.
+Used to manage book reservations for users.
+Book Availability Table:
+Tracks the availability of books for borrowing.
+Contains book ID and available quantity.
+Helps prevent overborrowing and manage book availability.
+Notifications Table:
+Records notifications or alerts sent to users.
+Contains information about the notification, user ID, message, timestamp, etc.
+ 
+
+Suggested controllers:
+
+ 
+
+Books Controller:
+Manages book-related operations and interactions.
+Provides methods to retrieve book information based on ISBN-13 or other criteria.
+Facilitates book catalog management and availability tracking.
+Borrowed Books Controller:
+Manages interactions related to borrowed books.
+Provides methods to record borrowing transactions, update return dates, and retrieve borrowed book information.
+Handles due date calculations and book availability updates.
+Waitlist Controller:
+Manages the process of joining the waitlist for specific books.
+Provides methods to add users to the waitlist, retrieve waitlist information, and update waitlist status.
+Helps manage book reservations and user notifications.
+Book Availability Controller:
+Handles interactions related to book availability.
+Provides methods to update and retrieve available quantities for books.
+Ensures availability tracking is accurate and prevents overborrowing.
+Notifications Controller:
+Manages sending notifications or alerts to users.
+Provides methods to create and send notifications, storing relevant information such as user ID, message, and timestamp.
+Facilitates communication between different parts of the system and users.
