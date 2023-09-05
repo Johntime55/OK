@@ -1,0 +1,163 @@
+using System;
+using System.Linq;
+using System.Web.Mvc;
+using MyLibrary.Models;
+
+namespace MyLibrary.Controllers
+{
+    public class WaitListController : Controller
+    {
+        private I_CoposEntities db = new I_CoposEntities(); // Instanță a contextului de bază de date
+        UserInfo user = new UserInfo();
+
+        // Acțiunea pentru afișarea listei de așteptare a utilizatorului
+        public ActionResult MyWaitList()
+        {
+            return View(db.Waitlists.OrderBy(p => p.WaitlistId).Distinct().ToList());
+        }
+
+        // Acțiunea pentru adăugarea unei cărți în lista de așteptare
+        public ActionResult Join()
+        {
+            ViewBag.ErrorMessage = TempData["ErrorMessage"];
+            ViewBag.SuccessMessage = TempData["SuccessMessage"];
+            return View();
+        }
+
+        [HttpPost]
+        public ActionResult Join(string isbn13)
+        {
+            if (string.IsNullOrEmpty(isbn13) || isbn13.Length != 13)
+            {
+                TempData["ErrorMessage"] = "ISBN-13 must be 13 digits long.";
+                return RedirectToAction("Join");
+            }
+
+            var book = db.BooksAvailables.FirstOrDefault(b => b.Isbn13 == isbn13);
+            if (book == null)
+            {
+                TempData["ErrorMessage"] = "The book with this ISBN-13 does not exist in the library.";
+                return RedirectToAction("Join");
+            }
+
+            if (user.isLoggedIn())
+            {
+                string currentUserId = getUserName();
+
+                if (book.QtyAvailable >= -500)
+                {
+                    book.QtyAvailable--;
+
+                    Waitlist waitlistedBook = new Waitlist
+                    {
+                        UserId = currentUserId,
+                        BookName = book.BookName,
+                        BookISBN = book.Isbn13,
+                        RegistrationDate = DateTime.Now,
+                        ReturnDate = DateTime.Now.AddDays(1)
+                    };
+                    db.Waitlists.Add(waitlistedBook);
+                    db.SaveChanges();
+
+                    TempData["SuccessMessage"] = "The book was successfully listed in the Waitlist!";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "The book is not available for WaitList.";
+                }
+
+                return RedirectToAction("MyWaitList");
+            }
+            else
+            {
+                return RedirectToAction("LoginPage", "Account");
+            }
+        }
+
+        // Metoda pentru obținerea numelui utilizatorului
+        public string getUserName()
+        {
+            UserInfo user = new UserInfo();
+            return user.getUsername();
+        }
+
+        // Acțiunea pentru eliminarea cărții din lista de așteptare
+        [HttpPost]
+        public ActionResult CancelWaitlist(int WaitlistId)
+        {
+            var waitlistedBook = db.Waitlists.Find(WaitlistId); // Găsește cartea în lista de așteptare după ID
+            if (waitlistedBook != null)
+            {
+                db.Waitlists.Remove(waitlistedBook); // Elimină cartea din lista de așteptare
+                db.SaveChanges(); // Salvează modificările în baza de date
+                TempData["SuccessMessage"] = "The book has been removed from your Waitlist.";
+            }
+            return RedirectToAction("MyWaitList"); // Redirecționează utilizatorul înapoi la lista sa de așteptare
+        }
+    }
+}
+
+
+viewul
+
+@using MyLibrary.ADClasses
+@{ var usrData = new UserInfo(); }
+
+@model List<MyLibrary.Models.Waitlist>
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My WaitList</title>
+</head>
+<body>
+    <h2>My WaitList</h2>
+
+    @if (!string.IsNullOrEmpty(ViewBag.ErrorMessage))
+    {
+        <div class="alert alert-danger">
+            @ViewBag.ErrorMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(ViewBag.SuccessMessage))
+    {
+        <div class="alert alert-success">
+            @ViewBag.SuccessMessage
+        </div>
+    }
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>User Name</th>
+                <th>Book Name</th>
+                <th>ISBN</th>
+                <th>Registration Date</th>
+                <th>Return Date</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var book in Model)
+            {
+                <tr>
+                    <td>@book.WaitlistId</td>
+                    <td>@book.UserId</td>
+                    <td>@book.BookName</td>
+                    <td>@book.BookISBN</td>
+                    <td>@book.RegistrationDate</td>
+                    <td>@book.ReturnDate</td>
+                    <td>
+                        @using (Html.BeginForm("CancelWaitlist", "WaitList", new { WaitlistId = book.WaitlistId }, FormMethod.Post))
+                        {
+                            <input type="submit" class="btn btn-danger" value="Cancel Waitlist" onclick="return confirm('Are you sure you want to cancel this book from your Waitlist?')" />
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</body>
+</html>
