@@ -1,0 +1,45 @@
+[HttpPost]
+public ActionResult PerformAction(int WaitlistId)
+{
+    var waitlistedBook = db.Waitlists.Find(WaitlistId); // Găsește cartea în lista de așteptare după ID
+    if (waitlistedBook != null)
+    {
+        if (waitlistedBook.IsReturned == 1)
+        {
+            // Cartea este în așteptare, așa că o vom "returna"
+            waitlistedBook.IsReturned = 0; // Setează IsReturned la 0 (cartea a fost returnată)
+            TempData["SuccessMessage"] = "The book has been returned.";
+        }
+        else
+        {
+            // Cartea a fost returnată, așa că vom închide acțiunea
+            TempData["SuccessMessage"] = "The action has been closed.";
+        }
+        
+        db.SaveChanges(); // Salvează modificările în baza de date
+    }
+    return RedirectToAction("MyWaitList"); // Redirecționează utilizatorul înapoi la lista sa de așteptare
+}
+
+
+@foreach (var book in Model)
+{
+    <tr>
+        <!-- ... alte coloane ... -->
+        <td>
+            @using (Html.BeginForm("PerformAction", "WaitList", new { WaitlistId = book.WaitlistId }, FormMethod.Post))
+            {
+                if (book.IsReturned == 1)
+                {
+                    <input type="submit" class="btn btn-primary" value="Action" />
+                }
+                else
+                {
+                    <input type="submit" class="btn btn-danger" value="Close Action" />
+                }
+            }
+        </td>
+    </tr>
+}
+
+￼Enter
