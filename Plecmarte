@@ -1,0 +1,40 @@
+// Verificăm dacă cartea este împrumutată sau este în lista de așteptare
+bool isBookBorrowed = db.Borrows.Any(b => b.BorrowedBookId == id);
+bool isBookInWaitlist = db.Waitlists.Any(w => w.WaitlistId == id);
+
+if (isBookBorrowed)
+{
+    // Afișăm un mesaj de eroare pentru că este împrumutată
+    TempData["ErrorMessage"] = "Cartea este împrumutată și nu poate fi ștearsă.";
+}
+else if (isBookInWaitlist)
+{
+    // Afișăm un mesaj de eroare pentru că este în lista de așteptare
+    TempData["ErrorMessage"] = "Cartea se află în lista de așteptare și nu poate fi ștearsă.";
+}
+else
+{
+    // Dacă nu este în niciuna din situații, ștergem cartea din ambele tabele și setăm un mesaj de succes
+    Library library = db.Libraries.Find(id);
+    if (library == null)
+    {
+        return HttpNotFound();
+    }
+
+    // Ștergeți cartea din tabela Libraries
+    db.Libraries.Remove(library);
+
+    // Căutați cartea în tabela BooksAvailables și ștergeți-o dacă există
+    BookAvailable bookAvailable = db.BooksAvailables.FirstOrDefault(ba => ba.BookId == id);
+    if (bookAvailable != null)
+    {
+        db.BooksAvailables.Remove(bookAvailable);
+    }
+
+    db.SaveChanges();
+
+    TempData["SuccessMessage"] = "Cartea a fost ștearsă cu succes.";
+}
+
+return RedirectToAction("Index");
+￼Enter
