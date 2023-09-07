@@ -1,0 +1,35 @@
+public void ActualizeazaCantitateDisponibila(int libraryId)
+{
+    // Obține cartea din tabela principală cu ID-ul specificat
+    Library library = db.Libraries.Find(libraryId);
+
+    if (library != null)
+    {
+        // Obține cantitatea inițială disponibilă din tabela BooksAvailables
+        int initialAvailableBooksCount = db.BooksAvailables
+            .Where(ba => ba.BookName == library.BookName)
+            .Sum(ba => ba.QtyAvailable);
+
+        // Obține numărul de cărți împrumutate din tabela Barrow
+        int borrowedBooksCount = db.Barrows
+            .Count(b => b.BookId == libraryId);
+
+        // Calculează noua cantitate disponibilă
+        int newAvailableBooksCount = initialAvailableBooksCount - borrowedBooksCount;
+
+        // Actualizează cantitatea disponibilă în tabela BooksAvailables
+        var booksAvailable = db.BooksAvailables
+            .FirstOrDefault(ba => ba.BookName == library.BookName);
+
+        if (booksAvailable != null)
+        {
+            booksAvailable.QtyAvailable = newAvailableBooksCount;
+            db.SaveChanges();
+        }
+
+        // Actualizează cantitatea disponibilă în tabela principală Library
+        library.QtyAvailable = newAvailableBooksCount;
+        db.SaveChanges();
+    }
+}
+￼Enter
