@@ -1,0 +1,39 @@
+<div class="modal fade" id="bookDetailsModal" tabindex="-1" role="dialog" aria-labelledby="bookDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="bookDetailsModalLabel">Book Details</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Aici veți afișa detaliile cărții -->
+                <div id="bookDetailsContent"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+// Funcție pentru a afișa detaliile cărții în fereastra modală
+function showBookDetails(title, author, isbn13, isbn10, publisher, yearPublished) {
+    // Construiți conținutul detaliilor cărții
+    var content = "<h4>Title: " + title + "</h4>";
+    content += "<p>Author: " + author + "</p>";
+    content += "<p>ISBN-13: " + isbn13 + "</p>";
+    if (isbn10) {
+        content += "<p>ISBN-10: " + isbn10 + "</p>";
+    }
+    content += "<p>Publisher: " + publisher + "</p>";
+    content += "<p>Year Published: " + yearPublished + "</p>";
+
+    // Adăugați conținutul în div-ul corespunzător
+    $("#bookDetailsContent").html(content);
+
+    // Deschideți fereastra modală pentru afișarea detaliilor
+    $("#bookDetailsModal").modal("show");
+}
+
+￼Enter
